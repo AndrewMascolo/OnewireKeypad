@@ -1,0 +1,15 @@
+OnewireKeypad	KEYWORD2
+Getkey	KEYWORD2
+SetHoldTime	KEYWORD2
+SetDebounceTime	KEYWORD2
+Key_State	KEYWORD2
+Readpin	KEYWORD2
+LatchKey	KEYWORD2
+checkLatchedKey	KEYWORD2
+addEventKey	KEYWORD2
+deleteEventKey	KEYWORD2
+ListenforEventKey	KEYWORD2
+
+Serial	LITERAL1
+Lcd	LITERAL1
+
