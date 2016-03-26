@@ -24,10 +24,14 @@ template< typename T, unsigned MAX_KEYS >
 class OnewireKeypad{
   public: 
 	OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2 ) 
-		: port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ),
-		  holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), debounceTime( 10 ), Num( 0 ), R1( R1 ), R2( R2 ) { }
-
+		: port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), debounceTime( 10 ), Num( 0 ), R1( R1 ), R2( R2 ) { }
+		
+	OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin) 
+		: port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), debounceTime( 10 ), Num( 0 ) { }
+    
+	void	SetResistors(long *R_Rows, long *R_Cols, long PullDown, bool Diodes = true);
 	char	Getkey();
+	char	S_Getkey();
 	void	SetHoldTime(unsigned long setH_Time)       { holdTime = setH_Time; }
 	void	SetDebounceTime(unsigned long setD_Time)       { debounceTime = setD_Time; }
 	uint8_t	Key_State();
@@ -52,13 +56,15 @@ class OnewireKeypad{
 	unsigned long startTime;
 	unsigned long debounceTime;  
     bool state, lastState, lastRead;
-	int R1, R2;    
+	long R1, R2;
+    long *_R_row, *_R_col, _PD; 
+    bool _diode;	
 };
 
 struct{
     void(*intFunc)(void); 
 	char keyHolder;
-} Event[20];
+} Event[16];
 
 template < typename T, typename U > struct IsSameType{ 
 enum { Value = false }; 
@@ -81,6 +87,44 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey()
 		float Vfinal = V * (1023.0f / 5.0f);
 		
 		if(Reading <= (int(Vfinal) + 1.9f )) 
+		  return _Data[(SIZE-1)-i];
+		
+		if( C == 0 )
+		{
+		  R--;
+		  C = _Cols-1;
+		}
+        else C--;		
+	  }
+	  startTime = millis();
+	}
+  } 
+  return NO_KEY; 
+}
+
+
+template < typename T, unsigned MAX_KEYS >
+void OnewireKeypad< T, MAX_KEYS >::SetResistors(long *R_Rows, long *R_Cols, long PullDown, bool Diodes)
+{
+  _R_row = R_Rows;
+  _R_col = R_Cols;
+  _PD = PullDown;
+  _diode = Diodes;
+}
+
+template < typename T, unsigned MAX_KEYS >
+char OnewireKeypad< T, MAX_KEYS >::S_Getkey()
+{  
+   if( int Reading = analogRead(_Pin))
+   {
+	if(millis() - startTime > debounceTime)
+	{
+	  for( byte i = 0, R = _Rows-1, C = _Cols-1; i < SIZE; i++ )
+	  {
+		float V = ((5.0f * float(_PD)) / (float(_R_row[R]) + float(_R_col[C]) + float(_PD)) ) - (0.7f * byte(_diode));
+		//float Vfinal = V * (1023.0f / 5.0f);
+		
+		if(Reading <= (int(V) + 1.9f )) 
 		  return _Data[(SIZE-1)-i];
 		
 		if( C == 0 )
@@ -131,7 +175,7 @@ void OnewireKeypad<T, MAX_KEYS >::LatchKey()
 	  {
 		if(read == _Data[idx] )
         {		
-		   strcpy_P( output, ( latchedKey[idx] = !latchedKey[idx] ) ? PSTR( "Key X was Latched" ) : PSTR( "Key X was Unlatched" ) ); //MOD
+		  strcpy_P( output, ( latchedKey[idx] = !latchedKey[idx] ) ? PSTR( "Key X was Latched" ) : PSTR( "Key X was Unlatched" ) ); //MOD
 		  PRINT = true;
 		  output[ 4 ] = read; //MOD <- very clever       
 		}
@@ -193,7 +237,8 @@ void OnewireKeypad< T, MAX_KEYS >::ListenforEventKey()
   {
 	if(Getkey() == Event[ idx ].keyHolder)
 	{
-	  Event[ idx ].intFunc();
+	  if(Event[ idx ].intFunc())
+	    Event[ idx ].intFunc();
 	}
   }
 }
