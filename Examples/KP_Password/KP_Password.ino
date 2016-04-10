@@ -8,30 +8,38 @@ char KEYS[] = {
   '*', '0', '#', //'D'
 };
 
-OnewireKeypad <Print, 12 > KP(Serial, KEYS, 4, 3, A0, 4700, 1000 );
+OnewireKeypad <Print, 12 > KP(Serial, KEYS, 4, 3, A15, 4700, 1000 );
 Password password = Password( "1234" );
 
-void setup () 
+void setup ()
 {
   Serial.begin(115200);
+
+  KP.SetHoldTime(1000);
+  KP.ShowRange();
 }
 
 void loop()
 {
   char Key;
-  if (KP.Key_State() == PRESSED)
+  byte KState = KP.Key_State();
+
+  if (KState == PRESSED)
   {
     if ( Key = KP.Getkey() )
     {
-      Serial.print("Pressed: ");
-      Serial.println(Key);
-      switch (Key) 
+      Serial << "Pressed: " << Key << "\n";
+      switch (Key)
       {
         case '*': checkPassword(); break;
         case '#': password.reset(); break;
         default: password.append(Key);
       }
     }
+  }
+  else if (KState == HELD)
+  {
+    Serial << "Key:" << KP.Getkey() << " being held\n";
   }
 }
 

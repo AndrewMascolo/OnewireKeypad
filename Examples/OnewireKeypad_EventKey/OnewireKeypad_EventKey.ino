@@ -7,7 +7,7 @@ char KEYS[]= {
   '*','0','#',
 };
 
-OnewireKeypad <Print, 12 > Keypad(Serial, KEYS, 4, 3, A0, 4700, 1000 );
+OnewireKeypad <Print, 12 > Keypad(Serial, KEYS, 4, 3, A15, 4700, 1000 );
 
 void setup ()
 {

@@ -19,7 +19,8 @@ void setup (){
 }
 void loop() 
 {
-  if( KP.Getkey() ){
+  if( KP.Getkey() )
+  {
     Lcd.clear();
     Lcd.home();
     Lcd.print( F( "KP: " ) );
@@ -27,7 +28,8 @@ void loop()
     KP.LatchKey();
   }
 
-  if( KP2.Getkey() ){
+  if( KP2.Getkey() )
+  {
     Serial.print( F( "KP2: " ) );
     Serial.println(KP2.Key_State());
     KP2.LatchKey();
