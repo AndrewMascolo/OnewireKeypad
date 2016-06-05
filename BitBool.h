@@ -1,3 +1,6 @@
+// Original Creator: Pyro_65
+// Special thanks to Pyro for allowing me to use his library in my OneWire Keypad library.
+
 #ifndef BitBool_h
   #define BitBool_h
   #include "Arduino.h"
