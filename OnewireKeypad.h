@@ -1,29 +1,5 @@
 //OnewireKP.h
 
-/*
-The MIT License (MIT)
-
-Copyright (c) 2016 Andrew Mascolo Jr
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 #ifndef OnewireKeypad_h
 #define OnewireKeypad_h
 #include <Arduino.h>
@@ -35,8 +11,10 @@ SOFTWARE.
 #define RELEASED 2
 #define HELD 3
 
-// 3 samples gives great results, 2 is ok and 1 is fast, but not very reliable
-#define NUM_OF_SAMPLES 3
+#define ExtremePrec 100
+#define HighPrec 50
+#define MediumPrec 20
+#define LowPrec 5
 
 //This number is based on 1/3 the lowest AR value from the ShowRange function.
 #define KP_TOLERANCE 20
@@ -59,11 +37,11 @@ template<class T> inline Print &operator<<(Print &Outport, T str)
 template< typename T, unsigned MAX_KEYS >
 class OnewireKeypad {
   public:
-    OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2 )
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ) { }
+    OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2 , long Precision)
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ), Precision( Precision ) { }
 
-    OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ) { }
+    OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, long Precision)
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), Precision( Precision ) { }
 
     void	SetResistors(long *R_Rows, long *R_Cols, long PullDown, bool Diodes = true);
     char	Getkey();
@@ -94,6 +72,7 @@ class OnewireKeypad {
     //unsigned long debounceTime;
     bool state, lastState, lastRead;
     long R1, R2;
+	long Precision;
     //long *_R_row, *_R_col, _PD;
     //bool _diode;
 	const float ANALOG_FACTOR; 
@@ -114,20 +93,20 @@ template < typename T > struct IsSameType< T, T > {
 template < typename T, unsigned MAX_KEYS >
 char OnewireKeypad< T, MAX_KEYS >::Getkey()
 {
-  unsigned int Reading = 0;
+  unsigned long Reading = 0;
 
   if (Readpin())
   {
-	#if NUM_OF_SAMPLES >= 2
-      for (size_t passes = 0; passes < NUM_OF_SAMPLES; passes++)
-	  {
+	if (Precision > 1) {
+      for (size_t passes = 0; passes < Precision; passes++) {
         Reading += analogRead(_Pin);
 	  }
 
-      Reading /= NUM_OF_SAMPLES;
-	#else
+      Reading /= Precision;
+	} 
+	else {
 	  Reading = analogRead(_Pin);
-	#endif
+	}
 
     for ( uint8_t i = 0, R = _Rows - 1, C = _Cols - 1; i < SIZE; i++ )
     {
