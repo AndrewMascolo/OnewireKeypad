@@ -15,6 +15,12 @@ void setup () {
   Serial.begin(115200);
 
   KP.SetHoldTime(1000);
+  
+  // This method is set in the constructor with a default value of 5.0
+  // You only need to include this if your Arduino is not supplying 5v to
+  // the keypad. ie. ~4.7v or even with 3.3v Arduino boards too.
+  KP.SetKeypadVoltage(5.0);
+  
   KP.ShowRange();
 }
 

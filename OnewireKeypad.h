@@ -1,5 +1,4 @@
 //OnewireKP.h
-
 /*
 The MIT License (MIT)
 
@@ -62,12 +61,13 @@ template< typename T, unsigned MAX_KEYS >
 class OnewireKeypad {
   public:
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2 , long Precision)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ), Precision( Precision ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ), Precision( Precision ) { }
 
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, long Precision)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), Precision( Precision ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), Precision( Precision ) { }
 
     void	SetResistors(long *R_Rows, long *R_Cols, long PullDown, bool Diodes = true);
+	void 	SetKeypadVoltage(float Volts) {voltage = Volts; ANALOG_FACTOR = (1023/Volts);}
     char	Getkey();
     char	S_Getkey();
     void	SetHoldTime(unsigned long setH_Time){ holdTime = setH_Time;}
@@ -83,13 +83,15 @@ class OnewireKeypad {
 
   protected:
     T &port_;
-
+	float ANALOG_FACTOR;
+	
   private:
     BitBool< MAX_KEYS > latchedKey;
     char *_Data;
     uint8_t _Rows, _Cols, _Pin;
     enum { SIZE = MAX_KEYS };
     uint8_t Num;
+	float voltage;
     unsigned long time;
     unsigned long holdTime;
     unsigned long startTime;
@@ -99,11 +101,11 @@ class OnewireKeypad {
 	long Precision;
     //long *_R_row, *_R_col, _PD;
     //bool _diode;
-	const float ANALOG_FACTOR; 
 	struct {
 		void(*intFunc)();
 		char keyHolder;
 	} Event[MAX_KEYS];
+	
 };
 
 template < typename T, typename U > struct IsSameType {
@@ -134,7 +136,7 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey()
 
     for ( uint8_t i = 0, R = _Rows - 1, C = _Cols - 1; i < SIZE; i++ )
     {
-      float V = (5.0f * float( R2 )) / (float(R2) + (float(R1) * float(R)) + (float(R2) * float(C)));
+      float V = (voltage * float( R2 )) / (float(R2) + (float(R1) * float(R)) + (float(R2) * float(C)));
       float Vfinal = V * (ANALOG_FACTOR);
 
       if (Reading <= (int(Vfinal) + 1.9f ))
@@ -306,9 +308,9 @@ void OnewireKeypad< T, MAX_KEYS >::ShowRange()
   {
     for ( uint8_t C = 0; C < _Cols; C++)
     {
-      float V = (5.0f * float( R2 )) / (float(R2) + (float(R1) * float(R)) + (float(R2) * float(C)));
+      float V = (voltage * float( R2 )) / (float(R2) + (float(R1) * float(R)) + (float(R2) * float(C)));
       if ( !IsSameType< T, LCDTYPE >::Value)
-        port_ << "V:" << V << ", AR: " << (V * 204.6f) << " | "; // 204.6 is from 1023/5.0
+        port_ << "V:" << V << ", AR: " << (V * ANALOG_FACTOR) << " | "; // 204.6 is from 1023/5.0
     }
     if ( !IsSameType< T, LCDTYPE >::Value)
       port_.println("\n--------------------------------------------------------------------------------");

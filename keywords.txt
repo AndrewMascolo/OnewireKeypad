@@ -2,6 +2,7 @@ OnewireKeypad	KEYWORD2
 Getkey	KEYWORD2
 SetHoldTime	KEYWORD2
 SetDebounceTime	KEYWORD2
+SetKeypadVoltage	KEYWORD2
 Key_State	KEYWORD2
 Readpin	KEYWORD2
 LatchKey	KEYWORD2
