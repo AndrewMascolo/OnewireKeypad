@@ -61,7 +61,7 @@ template< typename T, unsigned MAX_KEYS >
 class OnewireKeypad {
   public:
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, long R1, int R2, int R3,  long Precision)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ), R3( R3 ) Precision( Precision ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ), R3( R3 ), Precision( Precision ) { }
 	
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2 , long Precision)
       : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023/5.0), Num( 0 ), R1( R1 ), R2( R2 ), Precision( Precision ) { }
