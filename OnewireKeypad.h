@@ -297,7 +297,12 @@ void OnewireKeypad< T, MAX_KEYS >::ShowRange()
 {
   for ( uint8_t R = 0; R < _Rows; R++) {
     for ( uint8_t C = 0; C < _Cols; C++) {
-      float V = (voltage * float( R2 )) / (float(R2) + (float(R1) * float(R)) + (float(R2) * float(C)));
+	float V = 0;
+	if (R3 != 0) {
+            V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
+      	} else {
+       	    V = (voltage * float( R2 )) / (float(R2) + (float(R1) * float(R)) + (float(R2) * float(C)));
+      	}
       if ( !IsSameType< T, LCDTYPE >::Value)
         port_ << "V:" << V << ", AR: " << (V * ANALOG_FACTOR) << " | "; // 204.6 is from 1023/5.0
     }
