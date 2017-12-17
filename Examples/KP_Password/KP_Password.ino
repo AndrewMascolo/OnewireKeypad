@@ -8,7 +8,7 @@ char KEYS[] = {
   '*', '0', '#', //'D'
 };
 
-OnewireKeypad <Print, 12 > KP(Serial, KEYS, 4, 3, A0, 4700, 1000, ExtremePrec );
+OnewireKeypad <Print, 12 > KP(Serial, KEYS, 4, 3, A0, 4700, 1000 );
 Password password = Password( "1234" );
 
 void setup () {
