@@ -1,3 +1,5 @@
+// Creator: Andrew Mascolo
+//
 //#include <Wire.h>
 //#include <LiquidCrystal_I2C.h>
 #include <OnewireKeypad.h>
@@ -12,7 +14,7 @@ char KEYS[] = {
 //LiquidCrystal_I2C Lcd(0x20,20,4);
 //OnewireKeypad <LiquidCrystal_I2C, 12> KP( Lcd, KEYS, 4, 3, A0, 4700, 1000 );
 
-OnewireKeypad <Print, 16 > KP2(Serial, KEYS, 4, 4, A0, 4700, 1000, ExtremePrec );
+OnewireKeypad <Print, 16 > KP2(Serial, KEYS, 4, 4, A0, 4700, 1000 );
 
 void setup () {
   Serial.begin(115200);
@@ -26,8 +28,8 @@ void setup () {
   //KP.SetKeypadVoltage(5.0);
   KP2.SetKeypadVoltage(5.0);
 }
-void loop()
-{
+
+void loop() {
   //  if( KP.Getkey() )
   //  {
   //    Lcd.clear();
