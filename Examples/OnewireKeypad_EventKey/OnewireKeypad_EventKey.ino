@@ -7,28 +7,24 @@ char KEYS[]= {
   '*','0','#',
 };
 
-OnewireKeypad <Print, 12 > Keypad(Serial, KEYS, 4, 3, A0, 4700, 1000, ExtremePrec );
+OnewireKeypad <Print, 12 > Keypad(Serial, KEYS, 4, 3, A0, 4700, 1000 );
 
-void setup ()
-{
+void setup () {
   Serial.begin(115200);
   pinMode(13,OUTPUT);
   Keypad.addEventKey(test, '#'); // Add Function to list | Key to look for
   Keypad.addEventKey(togglePin13, '*');
 }
 
-void loop() 
-{
+void loop() {
   Keypad.ListenforEventKey(); // check if an EventKey is found
 }
 
-void test()
-{
+void test() {
   Serial.println("This is a test");
   Keypad.deleteEventKey('#'); // remove function from list
 }
 
-void togglePin13()
-{
+void togglePin13() {
   digitalWrite(13,!digitalRead(13));
 }
