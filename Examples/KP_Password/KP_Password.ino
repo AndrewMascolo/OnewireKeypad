@@ -1,3 +1,5 @@
+// Creator: Andrew Mascolo
+
 #include <OnewireKeypad.h>
 #include <Password.h>
 
@@ -37,19 +39,16 @@ void loop() {
         default: password.append(Key);
       }
     }
-  }
-  else if (KState == HELD) {
+  } else if (KState == HELD) {
     Serial << "Key:" << KP.Getkey() << " being held\n";
   }
 }
 
-void checkPassword()
-{
+void checkPassword() {
   if (password.evaluate()) {
     Serial.println("Success");
     //Add code to run if it works
-  }
-  else {
+  } else {
     Serial.println("Wrong");
     //add code to run if it did not work
   }
