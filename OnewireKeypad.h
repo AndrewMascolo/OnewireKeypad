@@ -77,6 +77,7 @@ class OnewireKeypad {
     void	deleteEventKey(char KEY);
     void	ListenforEventKey();
     void	ShowRange();
+	uint8_t _Pin;
 
   protected:
     T &port_;
@@ -85,7 +86,7 @@ class OnewireKeypad {
   private:
     BitBool< MAX_KEYS > latchedKey;
     char 	*_Data;
-    uint8_t _Rows, _Cols, _Pin;
+    uint8_t _Rows, _Cols; //, _Pin;
     enum { SIZE = MAX_KEYS };
     uint8_t Num;
     float 	voltage;
@@ -143,27 +144,32 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey() {
 	// Check R3 and set it if needed
 	if ( R3 == 0 ) { R3 = R2; }
 
-	if (readPin()) {
-		int pinReading = analogRead(_Pin);
-		if (pinReading != lastReading ) {
-			lastDebounceTime = millis();
-			lastReading = pinReading;
-		}
+	boolean state = readPin();
+	
+	int pinReading = analogRead(_Pin);
 		
-		if ( (millis() - lastDebounceTime) > debounceTime ) {
-			for ( uint8_t i = 0, R = _Rows - 1, C = _Cols - 1; i < SIZE; i++ ) {
-				float V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
-				float Vfinal = V * ANALOG_FACTOR;
-
-				if ( pinReading <= (int(Vfinal) + 1.9f )) {
-					return _Data[(SIZE - 1) - i];
-				}
-
-				if ( C == 0 ) {
-					R--;
-					C = _Cols - 1;
-				} else { C--;}
+	unsigned long currentMillis = millis();
+		
+	if (state != lastReading ) {
+		lastDebounceTime = currentMillis;
+		lastReading = state;
+	}
+		
+	if ( ((currentMillis - lastDebounceTime) > debounceTime) ) {
+		if (state == false) { return NO_KEY; }
+			
+		for ( uint8_t i = 0, R = _Rows - 1, C = _Cols - 1; i < SIZE; i++ ) {
+			float V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
+			float Vfinal = V * ANALOG_FACTOR;
+			
+			if ( pinReading <= (int(Vfinal) + 1.9f )) {
+				return _Data[(SIZE - 1) - i];
 			}
+
+			if ( C == 0 ) {
+				R--;
+				C = _Cols - 1;
+			} else { C--;}
 		}
 	}
 
