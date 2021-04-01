@@ -147,7 +147,9 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey() {
 	boolean state = readPin();
 	
 	int pinReading = analogRead(_Pin);
-		
+	int currdiff = 0;
+	int lastdiff = 1025;
+
 	unsigned long currentMillis = millis();
 		
 	if (state != lastReading ) {
@@ -162,8 +164,18 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey() {
 			float V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
 			float Vfinal = V * ANALOG_FACTOR;
 			
-			if ( pinReading <= (int(Vfinal) + 1.9f )) {
+			// Find closest key value to input reading 
+			currdiff = int(Vfinal) - pinReading;
+			currdiff = (currdiff < 0) ? (currdiff * -1) : currdiff; // abs(diff)
+
+			if ( currdiff == 0) {
 				return _Data[(SIZE - 1) - i];
+			} else if ( currdiff >= lastdiff) { 		// Return last checked value
+				return _Data[(SIZE - 1) - i + 1 ];
+			} else if ( i == SIZE - 1) { 				// Reached end of list
+				return _Data[(SIZE - 1) - i];
+			} else {
+				lastdiff = currdiff;
 			}
 
 			if ( C == 0 ) {
