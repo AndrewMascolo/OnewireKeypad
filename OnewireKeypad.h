@@ -135,7 +135,7 @@ void OnewireKeypad< T, MAX_KEYS >::SetKeypadVoltage(float Volts) {
 		}
 	} else {
 		voltage = Volts;
-		ANALOG_FACTOR = (pinRange / Volts);
+		if (pinRange > 0) { ANALOG_FACTOR = (pinRange / Volts); }
 	}
 }
 
@@ -203,7 +203,6 @@ uint8_t OnewireKeypad< T, MAX_KEYS >::Key_State() {
 	}
 	return WAITING;
 }
-
 
 template < typename T, unsigned MAX_KEYS >
 void OnewireKeypad<T, MAX_KEYS >::LatchKey() {
