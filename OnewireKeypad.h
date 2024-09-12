@@ -134,7 +134,9 @@ void OnewireKeypad<T, MAX_KEYS>::errorMSG(const char* msg) {
 template < typename T, unsigned MAX_KEYS >
 void OnewireKeypad< T, MAX_KEYS >::setAnalogPinRange(float range) {
 	if (range <= 0 || range > A_D ) {
-		errorMSG("Error. pinRange must not be less than or equal to 0 or greater than " + A_D);
+		char charArray[80];
+		sprintf(charArray, "Error. pinRange must not be less than or equal to 0 or greater than %d", A_D);
+		errorMSG(charArray);
 	} else {
 		pinRange = range;
 	}
@@ -146,7 +148,9 @@ void OnewireKeypad< T, MAX_KEYS >::setKeypadVoltage(float volts) {
 		errorMSG("Error, PinRange is 0.\nIf you are setting the keypad voltage, then you must also set the PinRange");
 	
 	if (volts <= 0 || volts > SUPPLY_VOLTAGE) {
-		errorMSG("Error. The Voltage must not be less than or equal to 0 or greater than " + SUPPLY_VOLTAGE);
+		char charArray[80];
+		sprintf(charArray, "Error. pinRange must not be less than or equal to 0 or greater than %f", SUPPLY_VOLTAGE);
+		errorMSG(charArray);
 	} else {
 		voltage = volts;
 		ANALOG_FACTOR = (pinRange / volts);
