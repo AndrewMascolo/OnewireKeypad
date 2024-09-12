@@ -45,7 +45,7 @@ typedef LiquidCrystal_I2C LCDTYPE;
 typedef MissingType LCDTYPE;
 #endif
 
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ESP32)
+#if defined(ESP32)
 #define A_D 4095
 #define SUPPLY_VOLTAGE 3.3
 #else
