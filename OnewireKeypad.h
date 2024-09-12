@@ -47,8 +47,10 @@ typedef MissingType LCDTYPE;
 
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ESP32)
 #define A_D 4095
+#define SUPPLY_VOLTAGE 3.3
 #else
 #define A_D 1023
+#define SUPPLY_VOLTAGE 5.0
 #endif
 
 
@@ -62,13 +64,13 @@ template< typename T, unsigned MAX_KEYS >
 class OnewireKeypad {
   public:
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, long R1, int R2, int R3)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), pinRange(A_D), ANALOG_FACTOR(A_D / 5.0), index( 0 ), R1( R1 ), R2( R2 ), R3( R3 ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( SUPPLY_VOLTAGE ), pinRange(A_D), ANALOG_FACTOR(A_D / SUPPLY_VOLTAGE), index( 0 ), R1( R1 ), R2( R2 ), R3( R3 ) { }
 
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), pinRange(A_D), ANALOG_FACTOR(A_D / 5.0), index( 0 ), R1( R1 ), R2( R2 ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( SUPPLY_VOLTAGE ), pinRange(A_D), ANALOG_FACTOR(A_D / SUPPLY_VOLTAGE), index( 0 ), R1( R1 ), R2( R2 ) { }
 
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), pinRange(A_D), ANALOG_FACTOR(A_D / 5.0), index( 0 ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( SUPPLY_VOLTAGE ), pinRange(A_D), ANALOG_FACTOR(A_D / SUPPLY_VOLTAGE), index( 0 ) { }
 
     char	getkey();
     void	setHoldTime(unsigned long setH_Time) { holdTime = setH_Time; }
@@ -143,8 +145,8 @@ void OnewireKeypad< T, MAX_KEYS >::setKeypadVoltage(float volts) {
 	if (pinRange == 0)
 		errorMSG("Error, PinRange is 0.\nIf you are setting the keypad voltage, then you must also set the PinRange");
 	
-	if (volts <= 0 || volts > 5) {
-		errorMSG("Error. The Voltage must not be less than or equal to 0 or greater than 5");
+	if (volts <= 0 || volts > SUPPLY_VOLTAGE) {
+		errorMSG("Error. The Voltage must not be less than or equal to 0 or greater than " + SUPPLY_VOLTAGE);
 	} else {
 		voltage = volts;
 		ANALOG_FACTOR = (pinRange / volts);
