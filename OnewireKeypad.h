@@ -35,7 +35,7 @@ SOFTWARE.
 #define HELD 3
 
 //This number is based on 1/3 the lowest AR value from the ShowRange function.
-#define KP_TOLERANCE 20
+#define KP_TOLERANCE 20														\
 
 struct MissingType {};
 
@@ -44,6 +44,13 @@ typedef LiquidCrystal_I2C LCDTYPE;
 #else
 typedef MissingType LCDTYPE;
 #endif
+
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ESP32)
+#define A_D 4095
+#else
+#define A_D 1023
+#endif
+
 
 template<class T> inline Print &operator<<(Print &Outport, T str) {
 	Outport.print(str);
@@ -55,28 +62,28 @@ template< typename T, unsigned MAX_KEYS >
 class OnewireKeypad {
   public:
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, long R1, int R2, int R3)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023 / 5.0), Num( 0 ), R1( R1 ), R2( R2 ), R3( R3 ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ), debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), pinRange(A_D), ANALOG_FACTOR(A_D / 5.0), index( 0 ), R1( R1 ), R2( R2 ), R3( R3 ) { }
 
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin, int R1, int R2)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023 / 5.0), Num( 0 ), R1( R1 ), R2( R2 ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), pinRange(A_D), ANALOG_FACTOR(A_D / 5.0), index( 0 ), R1( R1 ), R2( R2 ) { }
 
     OnewireKeypad( T &port, char KP[], uint8_t Rows, uint8_t Cols, uint8_t Pin)
-      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), ANALOG_FACTOR(1023 / 5.0), Num( 0 ) { }
+      : port_( port ), latchedKey( BitBool< MAX_KEYS >() ), _Data( KP ), _Rows( Rows ), _Cols( Cols ), _Pin( Pin ), holdTime( 500 ),debounceTime(200), startTime( 0 ), lastState( 0 ), lastRead( 0 ), voltage( 5.0 ), pinRange(A_D), ANALOG_FACTOR(A_D / 5.0), index( 0 ) { }
 
-    char	Getkey();
-    char	S_Getkey();
-    void	SetHoldTime(unsigned long setH_Time) { holdTime = setH_Time; }
-    void	SetDebounceTime(unsigned long setD_Time) { debounceTime = setD_Time; }
-	void	SetKeypadVoltage(float Volts);
-	void	SetAnalogPinRange(float range);
-    uint8_t	Key_State();
+    char	getkey();
+    void	setHoldTime(unsigned long setH_Time) { holdTime = setH_Time; }
+    void	setDebounceTime(unsigned long setD_Time) { debounceTime = setD_Time; }
+	void	setKeypadVoltage(float volts);
+	void	setAnalogPinRange(float range);
+    uint8_t	keyState();
     bool	readPin() { return analogRead(_Pin) > KP_TOLERANCE; }
-    void	LatchKey();
+    void	latchKey();
     bool	checkLatchedKey(char _key);
-    void	addEventKey(void (*userFunc)(void), char KEY);
-    void	deleteEventKey(char KEY);
-    void	ListenforEventKey();
-    void	ShowRange();
+    void	addEventKey(void (*userFunc)(void), char key);
+    void	deleteEventKey(char key);
+    void	listenforEventKey();
+    void	showRange();
+	uint16_t 	getPinRange() { return pinRange; }
 	uint8_t _Pin;
 
   protected:
@@ -88,7 +95,7 @@ class OnewireKeypad {
     char 	*_Data;
     uint8_t _Rows, _Cols; //, _Pin;
     enum { SIZE = MAX_KEYS };
-    uint8_t Num;
+    uint8_t index;
     float 	voltage;
     unsigned long time;
     unsigned long holdTime;
@@ -102,6 +109,7 @@ class OnewireKeypad {
 		void(*intFunc)();
 		char keyHolder;
     } Event[MAX_KEYS];
+	void errorMSG(const char* msg);
 };
 
 template < typename T, typename U > struct IsSameType {
@@ -113,43 +121,45 @@ template < typename T > struct IsSameType< T, T > {
 };
 
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad< T, MAX_KEYS >::SetAnalogPinRange(float range) {
-	if (range <= 0 || range > 1023 ) {
-		if ( IsSameType< T, LCDTYPE >::Value) {
-			port_.print("Error. pinRange must not be less than or equal to 0 or greater than 1023"); // Lcd display
-		} else {
-			port_.println("Error. pinRange must not be less than or equal to 0 or greater than 1023"); // Serial display
-		}
+void OnewireKeypad<T, MAX_KEYS>::errorMSG(const char* msg) {
+	if ( IsSameType< T, LCDTYPE >::Value) {
+		port_.print(msg); // Lcd display
+	} else {
+		port_.println(msg); // Serial display
+	}
+}
+
+template < typename T, unsigned MAX_KEYS >
+void OnewireKeypad< T, MAX_KEYS >::setAnalogPinRange(float range) {
+	if (range <= 0 || range > A_D ) {
+		errorMSG("Error. pinRange must not be less than or equal to 0 or greater than " + A_D);
 	} else {
 		pinRange = range;
 	}
 }
 
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad< T, MAX_KEYS >::SetKeypadVoltage(float Volts) {
-	if (Volts <= 0 || Volts > 5) {
-		if ( IsSameType< T, LCDTYPE >::Value) {
-			port_.print("Error. The Voltage must not be less than or equal to 0 or greater than 5"); // Lcd display
-		} else {
-			port_.println("Error. The Voltage must not be less than or equal to 0 or greater than 5"); // Serial display
-		}
+void OnewireKeypad< T, MAX_KEYS >::setKeypadVoltage(float volts) {
+	if (pinRange == 0)
+		errorMSG("Error, PinRange is 0.\nIf you are setting the keypad voltage, then you must also set the PinRange");
+	
+	if (volts <= 0 || volts > 5) {
+		errorMSG("Error. The Voltage must not be less than or equal to 0 or greater than 5");
 	} else {
-		voltage = Volts;
-		if (pinRange > 0) { ANALOG_FACTOR = (pinRange / Volts); }
+		voltage = volts;
+		ANALOG_FACTOR = (pinRange / volts);
 	}
 }
 
 template < typename T, unsigned MAX_KEYS >
-char OnewireKeypad< T, MAX_KEYS >::Getkey() {
+char OnewireKeypad< T, MAX_KEYS >::getkey() {
 	// Check R3 and set it if needed
 	if ( R3 == 0 ) { R3 = R2; }
 
 	boolean state = readPin();
 	
 	int pinReading = analogRead(_Pin);
-	int currdiff = 0;
-	int lastdiff = 1025;
-
+		
 	unsigned long currentMillis = millis();
 		
 	if (state != lastReading ) {
@@ -164,24 +174,14 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey() {
 			float V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
 			float Vfinal = V * ANALOG_FACTOR;
 			
-			// Find closest key value to input reading 
-			currdiff = int(Vfinal) - pinReading;
-			currdiff = (currdiff < 0) ? (currdiff * -1) : currdiff; // abs(diff)
-
-			if ( currdiff == 0) {
+			if ( pinReading <= (int(Vfinal) + 1.9f )) {
 				return _Data[(SIZE - 1) - i];
-			} else if ( currdiff >= lastdiff) { 		// Return last checked value
-				return _Data[(SIZE - 1) - i + 1 ];
-			} else if ( i == SIZE - 1) { 				// Reached end of list
-				return _Data[(SIZE - 1) - i];
-			} else {
-				lastdiff = currdiff;
 			}
 
 			if ( C == 0 ) {
 				R--;
 				C = _Cols - 1;
-			} else { C--;}
+			} else { C--; }
 		}
 	}
 
@@ -189,7 +189,7 @@ char OnewireKeypad< T, MAX_KEYS >::Getkey() {
 }
 
 template < typename T, unsigned MAX_KEYS >
-uint8_t OnewireKeypad< T, MAX_KEYS >::Key_State() {
+uint8_t OnewireKeypad< T, MAX_KEYS >::keyState() {
 	if ((state = readPin()) != lastState) {
 		return ( (lastState = state) ? PRESSED : RELEASED); //MOD
 	} else if (state) {
@@ -204,11 +204,12 @@ uint8_t OnewireKeypad< T, MAX_KEYS >::Key_State() {
 	return WAITING;
 }
 
+
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad<T, MAX_KEYS >::LatchKey() {
+void OnewireKeypad<T, MAX_KEYS >::latchKey() {
 	char output[20];
 	bool PRINT = false;
-	char read = Getkey();
+	char read = getkey();
 	
 	if (read != lastRead) {
 		if ( read ) {
@@ -223,11 +224,7 @@ void OnewireKeypad<T, MAX_KEYS >::LatchKey() {
     
 		lastRead = read;
 		if ( PRINT ) {
-			if ( IsSameType< T, LCDTYPE >::Value) {
-				port_.print(output); // Lcd display
-			} else {
-				port_.println(output); // Serial display
-			}
+			errorMSG(output);
 		}
 	}
 }
@@ -241,24 +238,20 @@ bool OnewireKeypad< T, MAX_KEYS >::checkLatchedKey(char _key) {
 }
 
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad< T, MAX_KEYS >::addEventKey(void (*userFunc)(void), char KEY) {
-	Event[Num].intFunc = userFunc;
-	Event[Num].keyHolder = KEY;
-	if (Num < MAX_KEYS) {
-		Num++;
+void OnewireKeypad< T, MAX_KEYS >::addEventKey(void (*userFunc)(void), char key) {
+	Event[index].intFunc = userFunc;
+	Event[index].keyHolder = key;
+	if (index < MAX_KEYS) {
+		index++;
 	} else {
-		if ( IsSameType< T, LCDTYPE >::Value) {
-			port_.print("Too Many EventKeys"); // Lcd display
-		} else {
-			port_.println("Too Many EventKeys"); // Serial display
-		}
+		errorMSG("Too Many EventKeys");
 	}
 }
 
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad< T, MAX_KEYS >::deleteEventKey(char KEY) {
-	for (uint8_t idx = 0; idx < Num; idx++) {
-		if (KEY == Event[ idx ].keyHolder) {
+void OnewireKeypad< T, MAX_KEYS >::deleteEventKey(char key) {
+	for (uint8_t idx = 0; idx < index; idx++) {
+		if (key == Event[ idx ].keyHolder) {
 			Event[ idx ].intFunc = NULL;
 			Event[ idx ].keyHolder = '~'; // CHANGED from '\0' to '~', because '\0' was causing issues.
 			break;
@@ -267,10 +260,10 @@ void OnewireKeypad< T, MAX_KEYS >::deleteEventKey(char KEY) {
 }
 
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad< T, MAX_KEYS >::ListenforEventKey() {
-	for (uint8_t idx = 0; idx < Num; idx++) {
-		if (Getkey() == Event[ idx ].keyHolder) {
-			if (Key_State() == RELEASED) {
+void OnewireKeypad< T, MAX_KEYS >::listenforEventKey() {
+	for (uint8_t idx = 0; idx < index; idx++) {
+		if (getkey() == Event[ idx ].keyHolder) {
+			if (keyState() == RELEASED) {
 				Event[ idx ].intFunc();
 				break;
 			}
@@ -279,7 +272,7 @@ void OnewireKeypad< T, MAX_KEYS >::ListenforEventKey() {
 }
 
 template < typename T, unsigned MAX_KEYS >
-void OnewireKeypad< T, MAX_KEYS >::ShowRange() {
+void OnewireKeypad< T, MAX_KEYS >::showRange() {
 	if (R3 == 0) { R3 = R2; }
 
 	for ( uint8_t R = 0; R < _Rows; R++) {
@@ -287,7 +280,7 @@ void OnewireKeypad< T, MAX_KEYS >::ShowRange() {
 			float V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
       
 			if ( !IsSameType< T, LCDTYPE >::Value)
-				port_ << "V:" << V << ", AR: " << (V * ANALOG_FACTOR) << " | "; // 204.6 is from 1023/5.0
+				port_ << "V:" << V << ", AR: " << (V * ANALOG_FACTOR) << " | "; // 204.6 is from A_D/5.0
 		}
 		if ( !IsSameType< T, LCDTYPE >::Value)
 			port_.println("\n--------------------------------------------------------------------------------");
