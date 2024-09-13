@@ -77,6 +77,7 @@ class OnewireKeypad {
     void	setDebounceTime(unsigned long setD_Time) { debounceTime = setD_Time; }
 	void	setKeypadVoltage(float volts);
 	void	setAnalogPinRange(float range);
+	void	setResistorTolerance(float value) { resistorTolerance = value; }
     uint8_t	keyState();
     bool	readPin() { return analogRead(_Pin) > KP_TOLERANCE; }
     void	latchKey();
@@ -87,6 +88,7 @@ class OnewireKeypad {
     void	showRange();
 	uint16_t 	getPinRange() { return pinRange; }
 	uint8_t _Pin;
+	float resistorTolerance = 0.05;
 
   protected:
     T &port_;
@@ -180,7 +182,10 @@ char OnewireKeypad< T, MAX_KEYS >::getkey() {
 			float V = (voltage * float( R3 )) / (float(R3) + (float(R1) * float(R)) + (float(R2) * float(C)));
 			float Vfinal = V * ANALOG_FACTOR;
 			
-			if ( pinReading <= (int(Vfinal) + 1.9f )) {
+			int highExtreme = Vfinal * (1 + resistorTolerance);
+			int lowExtreme = Vfinal * (1 - resistorTolerance);
+			
+			if ( pinReading <= highExtreme && pinReading >= lowExtreme) {
 				return _Data[(SIZE - 1) - i];
 			}
 
